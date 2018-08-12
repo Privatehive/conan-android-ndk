@@ -8,24 +8,25 @@ import shutil
 
 
 class AndroidNDKConan(ConanFile):
-    name = "conan-android-ndk"
+    name = "android-ndk"
     version = "r17b"
-    toolchain_version = "4.9"
     description = "The Android NDK is a toolset that lets you implement parts of your app in native code, " \
                   "using languages such as C and C++"
-    #url = "https://github.com/bincrafters/conan-android_ndk_installer"
-    #homepage = "https://developer.android.com/ndk/"
+    url = "https://github.com/Tereius/conan-android-ndk"
+    homepage = "https://developer.android.com/ndk/"
     license = "GNU GPL"
-    exports = ["LICENSE.md"]
+    exports = ["LICENSE"]
     short_paths = True
     no_copy_source = True
     options = {"makeStandalone": [True, False]}
-    default_options = "makeStandalone=False"
+    default_options = "makeStandalone=True"
     settings = {"os_build": ["Windows", "Linux", "Macos"],
                 "arch_build": ["x86", "x86_64"],
-                "compiler": ["clang"],
+                "compiler": ["clang", "gcc"],
                 "os": ["Android"],
                 "arch": ["x86", "x86_64", "mips", "mips64", "armv7", "armv8"]}
+
+    toolchain_version = "4.9"
 
     def configure(self):
         if str(self.settings.os_build) in ["Linux", "Macos"] and self.settings.arch_build == "x86":
@@ -34,15 +35,17 @@ class AndroidNDKConan(ConanFile):
             raise ConanException("minumum API version for architecture %s is 21" % str(self.settings.os.api_level))
 
     def source(self):
-        os_name = {"Windows": "windows",
-                   "Macos": "darwin",
-                   "Linux": "linux"}.get(str(self.settings.os_build))
         arch_name = str(self.settings.arch_build)
-
         source_url = "https://dl.google.com/android/repository/android-ndk-{0}-{1}-{2}.zip".format(self.version,
-                                                                                                   os_name,
+                                                                                                   self.os_name,
                                                                                                    arch_name)
         tools.get(source_url)
+
+    @property
+    def os_name(self):
+        return {"Windows": "windows",
+                "Macos": "darwin",
+                "Linux": "linux"}.get(str(self.settings.os_build))
 
     @property
     def android_arch(self):
@@ -75,9 +78,13 @@ class AndroidNDKConan(ConanFile):
                                                     ndk, 'build', 'tools', 'make_standalone_toolchain.py')
 
             # TODO : conan support for stlport
-            stl = 'libc++' if self.settings.compiler.libcxx == 'libc++' else 'gnustl'
+            if str(self.settings.compiler.libcxx) == 'libc++':
+                stl = 'libc++'
+            else:
+                stl = 'gnustl'
 
             python = tools.which('python')
+            # TODO : what about arm64
             command = '%s %s --arch %s --api %s --stl %s --install-dir %s' % (python,
                                                                             make_standalone_toolchain,
                                                                             self.android_arch,
@@ -88,9 +95,10 @@ class AndroidNDKConan(ConanFile):
             self.run(command)
             if self.settings.os_build == 'Windows':
                 # workaround Windows CMake Clang detection (Determine-Compiler-Standalone.cmake)
-                with tools.chdir(os.path.join(self.package_folder, 'bin')):
-                    shutil.copy('clang60.exe', 'clang.exe')
-                    shutil.copy('clang60++.exe', 'clang++.exe')
+                if self.settings.compiler == 'clang':
+                    with tools.chdir(os.path.join(self.package_folder, 'bin')):
+                        shutil.copy('clang60.exe', 'clang.exe')
+                        shutil.copy('clang60++.exe', 'clang++.exe')
             else:
                 def chmod_plus_x(filename):
                     os.chmod(filename, os.stat(filename).st_mode | 0o111)
@@ -145,8 +153,9 @@ class AndroidNDKConan(ConanFile):
         ndk_root = self.package_folder
         if self.options.makeStandalone:
             ndk_bin = os.path.join(ndk_root, 'bin')
-        else:
-            ndk_bin = os.path.join(ndk_root, 'toolchains/' + self.triplet + "-" + self.toolchain_version)
+        #else:
+        #    subDir = "toolchains/%s-%s/prebuilt/%s-%s/bin" % (self.triplet, self.toolchain_versionm, self.os_name, self.settings.arch_build)
+        #    ndk_bin = os.path.join(ndk_root, subDir)
 
         self.output.info('Creating NDK_ROOT environment variable: %s' % ndk_root)
         self.env_info.NDK_ROOT = ndk_root
@@ -157,8 +166,9 @@ class AndroidNDKConan(ConanFile):
         self.output.info('Creating ANDROID_TOOLCHAIN_VERSION environment variable: %s' % self.toolchain_version)
         self.env_info.TOOLCHAIN_VERSION = self.toolchain_version
 
-        self.output.info('Appending PATH environment variable: %s' % ndk_bin)
-        self.env_info.PATH.append(ndk_bin)
+        if self.options.makeStandalone:
+            self.output.info('Appending PATH environment variable: %s' % ndk_bin)
+            self.env_info.PATH.append(ndk_bin)
 
         ndk_sysroot = os.path.join(ndk_root, 'sysroot')
         self.output.info('Creating CONAN_CMAKE_FIND_ROOT_PATH environment variable: %s' % ndk_sysroot)
@@ -170,20 +180,27 @@ class AndroidNDKConan(ConanFile):
         self.output.info('Creating self.cpp_info.sysroot: %s' % ndk_sysroot)
         self.cpp_info.sysroot = ndk_sysroot
 
-        make = os.path.join(ndk_bin, 'make.exe' if self.settings.os_build == 'Windows' else 'make')
-        self.output.info('Creating CONAN_MAKE_PROGRAM environment variable: %s' % make)
-        self.env_info.CONAN_MAKE_PROGRAM = make
+        if self.options.makeStandalone:
+            make = os.path.join(ndk_bin, 'make.exe' if self.settings.os_build == 'Windows' else 'make')
+            self.output.info('Creating CONAN_MAKE_PROGRAM environment variable: %s' % make)
+            self.env_info.CONAN_MAKE_PROGRAM = make
 
-        self.env_info.CC = self.define_tool_var('CC', 'clang', ndk_bin)
-        self.env_info.CXX = self.define_tool_var('CXX', 'clang++', ndk_bin)
-        self.env_info.LD = self.define_tool_var('LD', 'ld', ndk_bin)
-        self.env_info.AR = self.define_tool_var('AR', 'ar', ndk_bin)
-        self.env_info.RANLIB = self.define_tool_var('RANLIB', 'ranlib', ndk_bin)
-        self.env_info.AS = self.define_tool_var('AS', 'as', ndk_bin)
-        self.env_info.STRIP = self.define_tool_var('STRIP', 'strip', ndk_bin)
-        self.env_info.NM = self.define_tool_var('NM', 'nm', ndk_bin)
-        self.env_info.ADDR2LINE = self.define_tool_var('ADDR2LINE', 'addr2line', ndk_bin)
-        self.env_info.OBJCOPY = self.define_tool_var('OBJCOPY', 'objcopy', ndk_bin)
-        self.env_info.OBJDUMP = self.define_tool_var('OBJDUMP', 'objdump', ndk_bin)
-        self.env_info.READELF = self.define_tool_var('READELF', 'readelf', ndk_bin)
-        self.env_info.ELFEDIT = self.define_tool_var('ELFEDIT', 'elfedit', ndk_bin)
+        if self.options.makeStandalone:
+            if self.settings.compiler == 'clang':
+                self.env_info.CC = self.define_tool_var('CC', 'clang', ndk_bin)
+                self.env_info.CXX = self.define_tool_var('CXX', 'clang++', ndk_bin)
+                self.env_info.AS = self.define_tool_var('AS', 'clang', ndk_bin)
+            else:
+                self.env_info.CC = self.define_tool_var('CC', 'gcc', ndk_bin)
+                self.env_info.CXX = self.define_tool_var('CXX', 'g++', ndk_bin)
+                self.env_info.AS = self.define_tool_var('AS', 'as', ndk_bin)
+            self.env_info.LD = self.define_tool_var('LD', 'ld', ndk_bin)
+            self.env_info.AR = self.define_tool_var('AR', 'ar', ndk_bin)
+            self.env_info.RANLIB = self.define_tool_var('RANLIB', 'ranlib', ndk_bin)
+            self.env_info.STRIP = self.define_tool_var('STRIP', 'strip', ndk_bin)
+            self.env_info.NM = self.define_tool_var('NM', 'nm', ndk_bin)
+            self.env_info.ADDR2LINE = self.define_tool_var('ADDR2LINE', 'addr2line', ndk_bin)
+            self.env_info.OBJCOPY = self.define_tool_var('OBJCOPY', 'objcopy', ndk_bin)
+            self.env_info.OBJDUMP = self.define_tool_var('OBJDUMP', 'objdump', ndk_bin)
+            self.env_info.READELF = self.define_tool_var('READELF', 'readelf', ndk_bin)
+            self.env_info.ELFEDIT = self.define_tool_var('ELFEDIT', 'elfedit', ndk_bin)
