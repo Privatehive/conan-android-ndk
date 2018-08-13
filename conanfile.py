@@ -180,10 +180,10 @@ class AndroidNDKConan(ConanFile):
         self.output.info('Creating self.cpp_info.sysroot: %s' % ndk_sysroot)
         self.cpp_info.sysroot = ndk_sysroot
 
-        if self.options.makeStandalone:
-            make = os.path.join(ndk_bin, 'make.exe' if self.settings.os_build == 'Windows' else 'make')
-            self.output.info('Creating CONAN_MAKE_PROGRAM environment variable: %s' % make)
-            self.env_info.CONAN_MAKE_PROGRAM = make
+        #if self.options.makeStandalone:
+        #    make = os.path.join(ndk_bin, 'make.exe' if self.settings.os_build == 'Windows' else 'make')
+        #    self.output.info('Creating CONAN_MAKE_PROGRAM environment variable: %s' % make)
+        #    self.env_info.CONAN_MAKE_PROGRAM = make
 
         if self.options.makeStandalone:
             if self.settings.compiler == 'clang':
