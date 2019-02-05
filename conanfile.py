@@ -85,7 +85,7 @@ class AndroidNDKConan(ConanFile):
 
             python = tools.which('python')
             # TODO : what about arm64
-            command = '%s %s --arch %s --api %s --stl %s --install-dir %s' % (python,
+            command = '"%s" %s --arch %s --api %s --stl %s --install-dir %s' % (python,
                                                                             make_standalone_toolchain,
                                                                             self.android_arch,
                                                                             str(self.settings.os.api_level),
