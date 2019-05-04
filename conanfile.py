@@ -50,7 +50,7 @@ class AndroidNDKConan(ConanFile):
         source_url = "https://dl.google.com/android/repository/android-ndk-{0}-{1}-{2}.zip".format(self.version,
                                                                                                    self.os_name,
                                                                                                    arch_name)
-        tools.get(source_url)
+        tools.get(source_url, keep_permissions=True)
 
     @property
     def os_name(self):
@@ -166,9 +166,10 @@ class AndroidNDKConan(ConanFile):
         #    subDir = "toolchains/%s-%s/prebuilt/%s-%s/bin" % (self.triplet, self.toolchain_versionm, self.os_name, self.settings.arch_build)
         #    ndk_bin = os.path.join(ndk_root, subDir)
 
-        self.output.info('Creating NDK_ROOT, ANDROID_NDK_ROOT environment variable: %s' % ndk_root)
+        self.output.info('Creating NDK_ROOT, ANDROID_NDK_ROOT, ANDROID_NDK_HOME environment variable: %s' % ndk_root)
         self.env_info.NDK_ROOT = ndk_root
         self.env_info.ANDROID_NDK_ROOT = ndk_root
+        self.env_info.ANDROID_NDK_HOME = ndk_root
 
         self.output.info('Creating CHOST environment variable: %s' % self.triplet)
         self.env_info.CHOST = self.triplet
