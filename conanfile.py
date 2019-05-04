@@ -27,12 +27,23 @@ class AndroidNDKConan(ConanFile):
                 "arch": ["x86", "x86_64", "mips", "mips64", "armv7", "armv8"]}
 
     toolchain_version = "4.9"
+    supported_clang_version = "6.0"
+    supported_gcc_version = "4.9"
+    max_supported_api_level = 28
 
     def configure(self):
         if str(self.settings.os_build) in ["Linux", "Macos"] and self.settings.arch_build == "x86":
             raise ConanException("x86 %s host is not supported" % str(self.settings.os_build))
         if str(self.settings.arch) in ["x86_64", "armv8", "mips64"] and int(str(self.settings.os.api_level)) < 21:
-            raise ConanException("minumum API version for architecture %s is 21" % str(self.settings.os.api_level))
+            raise ConanException("Minumum API version for architecture %s is 21" % str(self.settings.os.api_level))
+        if int(str(self.settings.os.api_level)) > self.max_supported_api_level:
+            raise ConanException("Maximum API version for is " + str(self.max_supported_api_level))
+        if str(self.settings.compiler) == "clang" and not str(self.settings.compiler.libcxx) in ["libc++", "libstdc++"]:
+            raise ConanException("Unsupported libcxx")
+        if str(self.settings.compiler) == "clang" and str(self.settings.compiler.version) != self.supported_clang_version:
+            raise ConanException("Only clang version " + self.supported_clang_version + " is supported")
+        if str(self.settings.compiler) == "gcc" and str(self.settings.compiler.version) != self.supported_gcc_version:
+            raise ConanException("Only gcc version " + self.supported_gcc_version + " is supported")
 
     def source(self):
         arch_name = str(self.settings.arch_build)
@@ -77,14 +88,12 @@ class AndroidNDKConan(ConanFile):
             make_standalone_toolchain = os.path.join(self.source_folder,
                                                     ndk, 'build', 'tools', 'make_standalone_toolchain.py')
 
-            # TODO : conan support for stlport
             if str(self.settings.compiler.libcxx) == 'libc++':
                 stl = 'libc++'
             else:
                 stl = 'gnustl'
 
             python = tools.which('python')
-            # TODO : what about arm64
             command = '"%s" %s --arch %s --api %s --stl %s --install-dir %s' % (python,
                                                                             make_standalone_toolchain,
                                                                             self.android_arch,
