@@ -5,8 +5,8 @@ resources:
       name: Tereius/conan-azure-templates
       endpoint: Tereius
 
-jobs: Build
-- job:
+jobs:
+- job: Build
   strategy:
     matrix:
       Linux:
