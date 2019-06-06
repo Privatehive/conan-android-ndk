@@ -3,7 +3,7 @@ resources:
     - repository: templates
       type: github
       name: Tereius/conan-azure-templates
-endpoint: Tereius
+      endpoint: Tereius
 
 jobs: Build
 - job:
