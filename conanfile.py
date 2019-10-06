@@ -15,7 +15,7 @@ class AndroidNDKConan(ConanFile):
     url = "https://github.com/Tereius/conan-android-ndk"
     homepage = "https://developer.android.com/ndk/"
     license = "GNU GPL"
-    exports = ["LICENSE"]
+    exports = ["LICENSE", "android.toolchain.conan.cmake"]
     short_paths = True
     no_copy_source = True
     options = {"makeStandalone": [True, False]}
@@ -57,6 +57,15 @@ class AndroidNDKConan(ConanFile):
         return {"Windows": "windows",
                 "Macos": "darwin",
                 "Linux": "linux"}.get(str(self.settings.os_build))
+    
+    @property
+    def android_short_arch(self):
+        return {"armv7": "arm",
+                "armv8": "arm",
+                "mips": "arm",
+                "mips64": "arm",
+                "x86": "x86",
+                "x86_64": "x86"}.get(str(self.settings.arch))
 
     @property
     def android_arch(self):
@@ -66,6 +75,23 @@ class AndroidNDKConan(ConanFile):
                 "mips64": "mips64",
                 "x86": "x86",
                 "x86_64": "x86_64"}.get(str(self.settings.arch))
+
+    @property
+    def android_abi(self):
+        return {"armv7": "armeabi-v7a",
+                "armv8": "arm64-v8a",
+                "mips": "mips",
+                "mips64": "mips64",
+                "x86": "x86",
+                "x86_64": "x86_64"}.get(str(self.settings.arch))
+
+    @property
+    def android_stdlib(self):
+        return {"libstdc++": "gnustl_shared",
+                "libstdc++11": "gnustl_shared",
+                "libc++": "c++_shared",
+                "c++_shared": "c++_shared",
+                "c++_static": "c++_static"}.get(str(self.settings.compiler.libcxx))
 
     @property
     def abi(self):
@@ -139,6 +165,8 @@ class AndroidNDKConan(ConanFile):
 
     def package(self):
         self.copy(pattern="LICENSE", dst="license", src='.')
+        if not self.options.makeStandalone:
+            self.copy(pattern="android.toolchain.conan.cmake", dst="build/cmake", src='.')
 
     def tool_name(self, tool):
         if 'clang' in tool:
@@ -166,10 +194,11 @@ class AndroidNDKConan(ConanFile):
         #    subDir = "toolchains/%s-%s/prebuilt/%s-%s/bin" % (self.triplet, self.toolchain_versionm, self.os_name, self.settings.arch_build)
         #    ndk_bin = os.path.join(ndk_root, subDir)
 
-        self.output.info('Creating NDK_ROOT, ANDROID_NDK_ROOT, ANDROID_NDK_HOME environment variable: %s' % ndk_root)
+        self.output.info('Creating NDK_ROOT, ANDROID_NDK_ROOT, ANDROID_NDK_HOME, CONAN_CMAKE_ANDROID_NDK environment variable: %s' % ndk_root)
         self.env_info.NDK_ROOT = ndk_root
         self.env_info.ANDROID_NDK_ROOT = ndk_root
         self.env_info.ANDROID_NDK_HOME = ndk_root
+        self.env_info.CMAKE_ANDROID_NDK = ndk_root
 
         self.output.info('Creating CHOST environment variable: %s' % self.triplet)
         self.env_info.CHOST = self.triplet
@@ -180,11 +209,21 @@ class AndroidNDKConan(ConanFile):
         if self.options.makeStandalone:
             self.output.info('Appending PATH environment variable: %s' % ndk_bin)
             self.env_info.PATH.append(ndk_bin)
-
+        else:
+            toolchain = os.path.join(ndk_root, "build", "cmake", "android.toolchain.conan.cmake")
+            self.output.info('Creating CONAN_CMAKE_TOOLCHAIN_FILE environment variable: %s' % toolchain)
+            self.env_info.CONAN_CMAKE_TOOLCHAIN_FILE = toolchain
+            self.env_info.CONAN_ANDROID_STL = self.android_stdlib
+            self.env_info.CONAN_ANDROID_ABI = self.android_abi
+            self.env_info.CONAN_ANDROID_TOOLCHAIN = str(self.settings.compiler)
+            self.env_info.CONAN_ANDROID_PLATFORM = "android-" + str(self.settings.os.api_level)
+        
         ndk_sysroot = os.path.join(ndk_root, 'sysroot')
+        #else:
+        #    ndk_sysroot = os.path.join(ndk_root, 'platforms', 'android-' + str(self.settings.os.api_level), 'arch-' + self.android_short_arch)
         self.output.info('Creating CONAN_CMAKE_FIND_ROOT_PATH environment variable: %s' % ndk_sysroot)
         self.env_info.CONAN_CMAKE_FIND_ROOT_PATH = ndk_sysroot
-
+        
         self.output.info('Creating SYSROOT environment variable: %s' % ndk_sysroot)
         self.env_info.SYSROOT = ndk_sysroot
 
@@ -215,3 +254,6 @@ class AndroidNDKConan(ConanFile):
             self.env_info.OBJDUMP = self.define_tool_var('OBJDUMP', 'objdump', ndk_bin)
             self.env_info.READELF = self.define_tool_var('READELF', 'readelf', ndk_bin)
             self.env_info.ELFEDIT = self.define_tool_var('ELFEDIT', 'elfedit', ndk_bin)
+        else:
+            self.output.info('Creating self.cpp_info.builddirs: %s' % os.path.join(ndk_root, 'build'))
+            self.cpp_info.builddirs = [os.path.join(ndk_root, 'build')]
