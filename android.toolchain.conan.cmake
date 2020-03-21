@@ -16,5 +16,8 @@ set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY BOTH)
 set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE BOTH)
 set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM BOTH)
 
+# The conan compiler version check fails because of broken toolchain file. Skip the check for now.
+set(CONAN_DISABLE_CHECK_COMPILER On)
+
 # Finally, include the Android NDK CMake Toolchain
 include("${CMAKE_CURRENT_LIST_DIR}/android.toolchain.cmake")
