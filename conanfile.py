@@ -26,10 +26,16 @@ class AndroidNDKConan(ConanFile):
                 "os": ["Android"],
                 "arch": ["x86", "x86_64", "mips", "mips64", "armv7", "armv8"]}
 
-    toolchain_version = "4.9"
     supported_clang_version = "6.0"
     supported_gcc_version = "4.9"
     max_supported_api_level = 28
+
+    @property
+    def toolchain_version(self):
+        if str(self.settings.compiler) == "clang":
+            return "clang"
+        else:
+            return self.supported_gcc_version
 
     def configure(self):
         if str(self.settings.os_build) in ["Linux", "Macos"] and self.settings.arch_build == "x86":
@@ -200,11 +206,12 @@ class AndroidNDKConan(ConanFile):
         self.env_info.ANDROID_NDK_HOME = ndk_root
         self.env_info.CMAKE_ANDROID_NDK = ndk_root
 
-        self.output.info('Creating CHOST environment variable: %s' % self.triplet)
-        self.env_info.CHOST = self.triplet
+        if not str(self.settings.compiler) == "clang":
+            self.output.info('Creating CHOST environment variable: %s' % self.triplet)
+            self.env_info.CHOST = self.triplet
 
         self.output.info('Creating ANDROID_TOOLCHAIN_VERSION environment variable: %s' % self.toolchain_version)
-        self.env_info.TOOLCHAIN_VERSION = self.toolchain_version
+        self.env_info.ANDROID_TOOLCHAIN_VERSION = self.toolchain_version
 
         if self.options.makeStandalone:
             self.output.info('Appending PATH environment variable: %s' % ndk_bin)
