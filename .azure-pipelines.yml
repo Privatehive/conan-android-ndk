@@ -22,8 +22,6 @@ jobs:
     vmImage: '$(imageName)'
   timeoutInMinutes: 30
   steps:
-  - checkout: self
-  - checkout: templates
   - template: buildConanRecipe.yml@templates
     parameters: 
       conanEnv: {
