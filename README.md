@@ -7,4 +7,4 @@
 
 ### A conan package that provides the android ndk
 
-On the latest and greatest Linux distros that only provide libtinfo6 (provided by ncurses6) you have to install ncurses5-compat-libs.
+On the latest and greatest Linux distros that updated to libtinfo6 (provided by ncurses6) you have to install ncurses5-compat-libs.
