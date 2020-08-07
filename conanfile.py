@@ -183,7 +183,7 @@ class AndroidNDKConan(ConanFile):
         self.output.info('Creating %s environment variable: %s' % (name, path))
         return path
 
-    def pacckage_id(self):
+    def package_id(self):
         self.info.include_build_settings()
         if str(self.settings.compiler.libcxx) in ['libstdc++', 'libstdc++11']:
             self.info.settings.compiler.libcxx = 'libstdc++'
