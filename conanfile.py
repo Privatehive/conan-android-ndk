@@ -9,7 +9,7 @@ import shutil
 
 class AndroidNDKConan(ConanFile):
     name = "android-ndk"
-    version = "r17b"
+    version = "r17c"
     description = "The Android NDK is a toolset that lets you implement parts of your app in native code, " \
                   "using languages such as C and C++"
     url = "https://github.com/Tereius/conan-android-ndk"
