@@ -9,7 +9,7 @@ import shutil
 
 class AndroidNDKConan(ConanFile):
     name = "android-ndk"
-    version = "r17c"
+    version = "r21e"
     description = "The Android NDK is a toolset that lets you implement parts of your app in native code, " \
                   "using languages such as C and C++"
     url = "https://github.com/Tereius/conan-android-ndk"
@@ -18,26 +18,21 @@ class AndroidNDKConan(ConanFile):
     exports = ["LICENSE", "android.toolchain.conan.cmake"]
     short_paths = True
     no_copy_source = True
-    options = {"makeStandalone": [True, False]}
-    default_options = "makeStandalone=True"
     settings = {"os_build": ["Windows", "Linux", "Macos"],
-                "arch_build": ["x86", "x86_64"],
-                "compiler": ["clang", "gcc"],
+                "arch_build": ["x86_64"],
+                "compiler": ["clang"],
                 "os": ["Android"],
-                "arch": ["x86", "x86_64", "mips", "mips64", "armv7", "armv8"]}
+                "arch": ["x86", "x86_64", "armv7", "armv8"]}
 
-    supported_clang_version = "6.0"
-    supported_gcc_version = "4.9"
-    max_supported_api_level = 28
+    supported_clang_version = "9.0"
+    max_supported_api_level = 30
 
     @property
     def toolchain_version(self):
         return self.supported_gcc_version
 
     def configure(self):
-        if str(self.settings.os_build) in ["Linux", "Macos"] and self.settings.arch_build == "x86":
-            raise ConanException("x86 %s host is not supported" % str(self.settings.os_build))
-        if str(self.settings.arch) in ["x86_64", "armv8", "mips64"] and int(str(self.settings.os.api_level)) < 21:
+        if str(self.settings.arch) in ["x86_64", "armv8"] and int(str(self.settings.os.api_level)) < 21:
             raise ConanException("Minumum API version for architecture %s is 21" % str(self.settings.os.api_level))
         if int(str(self.settings.os.api_level)) > self.max_supported_api_level:
             raise ConanException("Maximum API version for is " + str(self.max_supported_api_level))
@@ -45,8 +40,6 @@ class AndroidNDKConan(ConanFile):
             raise ConanException("Unsupported libcxx")
         if str(self.settings.compiler) == "clang" and str(self.settings.compiler.version) != self.supported_clang_version:
             raise ConanException("Only clang version " + self.supported_clang_version + " is supported")
-        if str(self.settings.compiler) == "gcc" and str(self.settings.compiler.version) != self.supported_gcc_version:
-            raise ConanException("Only gcc version " + self.supported_gcc_version + " is supported")
 
     def source(self):
         arch_name = str(self.settings.arch_build)
@@ -65,8 +58,6 @@ class AndroidNDKConan(ConanFile):
     def android_short_arch(self):
         return {"armv7": "arm",
                 "armv8": "arm",
-                "mips": "arm",
-                "mips64": "arm",
                 "x86": "x86",
                 "x86_64": "x86"}.get(str(self.settings.arch))
 
@@ -74,8 +65,6 @@ class AndroidNDKConan(ConanFile):
     def android_arch(self):
         return {"armv7": "arm",
                 "armv8": "arm64",
-                "mips": "mips",
-                "mips64": "mips64",
                 "x86": "x86",
                 "x86_64": "x86_64"}.get(str(self.settings.arch))
 
@@ -83,16 +72,12 @@ class AndroidNDKConan(ConanFile):
     def android_abi(self):
         return {"armv7": "armeabi-v7a",
                 "armv8": "arm64-v8a",
-                "mips": "mips",
-                "mips64": "mips64",
                 "x86": "x86",
                 "x86_64": "x86_64"}.get(str(self.settings.arch))
 
     @property
     def android_stdlib(self):
-        return {"libstdc++": "gnustl_shared",
-                "libstdc++11": "gnustl_shared",
-                "libc++": "c++_shared",
+        return {"libc++": "c++_shared",
                 "c++_shared": "c++_shared",
                 "c++_static": "c++_static"}.get(str(self.settings.compiler.libcxx))
 
@@ -104,8 +89,6 @@ class AndroidNDKConan(ConanFile):
     def triplet(self):
         arch = {'arm': 'arm',
                 'arm64': 'aarch64',
-                'mips': 'mipsel',
-                'mips64': 'mips64el',
                 'x86': 'i686',
                 'x86_64': 'x86_64'}.get(self.android_arch)
         return '%s-linux-%s' % (arch, self.abi)
@@ -119,8 +102,6 @@ class AndroidNDKConan(ConanFile):
 
             if str(self.settings.compiler.libcxx) == 'libc++':
                 stl = 'libc++'
-            else:
-                stl = 'gnustl'
 
             python = tools.which('python')
             command = '"%s" %s --arch %s --api %s --stl %s --install-dir %s' % (python,
