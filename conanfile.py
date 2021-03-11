@@ -232,7 +232,7 @@ class AndroidNDKConan(ConanFile):
             self.env_info.CONAN_CMAKE_TOOLCHAIN_FILE = toolchain
             self.env_info.CONAN_ANDROID_STL = self.android_stdlib
             self.env_info.CONAN_ANDROID_ABI = self.android_abi
-            self.env_info.CONAN_ANDROID_TOOLCHAIN = self.get_setting("compiler")
+            self.env_info.CONAN_ANDROID_TOOLCHAIN = str(self.get_setting("compiler"))
             self.env_info.CONAN_ANDROID_PLATFORM = "android-" + str(self.get_setting("os.api_level"))
 
         ndk_sysroot = os.path.join(ndk_root, 'sysroot')
