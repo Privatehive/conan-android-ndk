@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from conans import ConanFile, tools
-from conans.errors import ConanException
+from conans.errors import ConanException, ConanInvalidConfiguration
 import os
 import shutil
 
@@ -20,69 +20,100 @@ class AndroidNDKConan(ConanFile):
     no_copy_source = True
     options = {"makeStandalone": [True, False]}
     default_options = "makeStandalone=True"
-    settings = {"os_build": ["Windows", "Linux", "Macos"],
-                "arch_build": ["x86_64"],
-                "compiler": ["clang"],
-                "os": ["Android"],
-                "arch": ["x86", "x86_64", "armv7", "armv8"]}
+    settings = "os", "arch", "compiler", "os_build", "arch_build"
 
     supported_clang_version = "9"
     max_supported_api_level = 30
 
-    # @property
-    # def toolchain_version(self):
-    #     return self.supported_gcc_version
+    def __getattr_recursive(self, obj, name, default):
+        if obj is None:
+            return default
+        split_names = name.split('.')
+        depth = len(split_names)
+        if depth == 1:
+            return getattr(obj, name, default)
+        return self.__getattr_recursive(getattr(obj, split_names[0], default), ".".join(split_names[1:]), default)
+
+    def isSingleProfile(self):
+        settings_target = getattr(self, 'settings_target', None)
+        if settings_target is None:
+            return True
+        return False
+
+    def get_setting(self, name: str):
+        is_build_setting = name.endswith('_build')
+        depth = len(name.split('.'))
+        settings_target = getattr(self, 'settings_target', None)
+        if settings_target is None:
+            # It is running in 'host' context
+            setting_val = self.__getattr_recursive(self.settings, name, None)
+            if setting_val is None:
+                raise ConanInvalidConfiguration("Setting in host context with name %s is missing. Make sure to provide it in your conan host profile." % name)
+            return setting_val
+        else:
+            # It is running in 'build' context and it is being used as a build requirement
+            setting_name = name.replace('_build', '')
+            if is_build_setting:
+                setting_val = self.__getattr_recursive(self.settings, setting_name, None)
+            else:
+                setting_val = self.__getattr_recursive(settings_target, setting_name, None)
+            if setting_val is None:
+                raise ConanInvalidConfiguration("Setting in build context with name %s is missing. Make sure to provide it in your conan %s profile." % (setting_name, "build" if is_build_setting else "host"))
+            return setting_val
 
     def configure(self):
-        if str(self.settings.arch) in ["x86_64", "armv8"] and int(str(self.settings.os.api_level)) < 21:
-            raise ConanException("Minumum API version for architecture %s is 21" % str(self.settings.os.api_level))
-        if int(str(self.settings.os.api_level)) > self.max_supported_api_level:
+        if self.get_setting("os_build") not in ["Windows", "Macos", "Linux"]:
+            raise ConanException("Unsupported build os: %s. Supported are: Windows, Macos, Linux" % self.get_setting("os_build"))
+        if self.get_setting("arch_build") != "x86_64":
+            raise ConanException("Unsupported build arch: %s. Supported is: x86_64" % self.get_setting("arch_build"))
+        if self.get_setting("arch") in ["x86_64", "armv8"] and int(str(self.get_setting("os.api_level"))) < 21:
+            raise ConanException("Minumum API version for architecture %s is 21" % str(self.get_setting("arch")))
+        if int(str(self.get_setting("os.api_level"))) > self.max_supported_api_level:
             raise ConanException("Maximum API version for is " + str(self.max_supported_api_level))
-        if str(self.settings.compiler) == "clang" and not str(self.settings.compiler.libcxx) in ["libc++", "libstdc++"]:
+        if self.get_setting("compiler") == "clang" and not self.get_setting("compiler.libcxx") in ["libc++", "libstdc++"]:
             raise ConanException("Unsupported libcxx")
-        if str(self.settings.compiler) == "clang" and str(
-                self.settings.compiler.version) != self.supported_clang_version:
+        if self.get_setting("compiler") == "clang" and str(
+                self.get_setting("compiler.version")) != self.supported_clang_version:
             raise ConanException("Only clang version " + self.supported_clang_version + " is supported")
 
     def source(self):
-        arch_name = str(self.settings.arch_build)
         source_url = "https://dl.google.com/android/repository/android-ndk-{0}-{1}-{2}.zip".format(self.version,
                                                                                                    self.os_name,
-                                                                                                   arch_name)
+                                                                                                   self.get_setting("arch_build"))
         tools.get(source_url, keep_permissions=True)
 
     @property
     def os_name(self):
         return {"Windows": "windows",
                 "Macos": "darwin",
-                "Linux": "linux"}.get(str(self.settings.os_build))
+                "Linux": "linux"}.get(str(self.get_setting("os_build")))
 
     @property
     def android_short_arch(self):
         return {"armv7": "arm",
                 "armv8": "arm",
                 "x86": "x86",
-                "x86_64": "x86"}.get(str(self.settings.arch))
+                "x86_64": "x86"}.get(str(self.get_setting("arch")))
 
     @property
     def android_arch(self):
         return {"armv7": "arm",
                 "armv8": "arm64",
                 "x86": "x86",
-                "x86_64": "x86_64"}.get(str(self.settings.arch))
+                "x86_64": "x86_64"}.get(str(self.get_setting("arch")))
 
     @property
     def android_abi(self):
         return {"armv7": "armeabi-v7a",
                 "armv8": "arm64-v8a",
                 "x86": "x86",
-                "x86_64": "x86_64"}.get(str(self.settings.arch))
+                "x86_64": "x86_64"}.get(str(self.get_setting("arch")))
 
     @property
     def android_stdlib(self):
         return {"libc++": "c++_shared",
                 "c++_shared": "c++_shared",
-                "c++_static": "c++_static"}.get(str(self.settings.compiler.libcxx))
+                "c++_static": "c++_static"}.get(str(self.get_setting("compiler.libcxx")))
 
     @property
     def abi(self):
@@ -103,7 +134,7 @@ class AndroidNDKConan(ConanFile):
             make_standalone_toolchain = os.path.join(self.source_folder,
                                                      ndk, 'build', 'tools', 'make_standalone_toolchain.py')
 
-            if str(self.settings.compiler.libcxx) == 'libc++':
+            if str(self.get_setting("compiler.libcxx")) == 'libc++':
                 stl = 'libc++'
             else:
                 stl = 'gnustl'
@@ -112,14 +143,14 @@ class AndroidNDKConan(ConanFile):
             command = '"%s" %s --arch %s --api %s --stl %s --install-dir %s' % (python,
                                                                                 make_standalone_toolchain,
                                                                                 self.android_arch,
-                                                                                str(self.settings.os.api_level),
+                                                                                str(self.get_setting("os.api_level")),
                                                                                 stl,
                                                                                 self.package_folder)
 
             self.run(command)
-            if self.settings.os_build == 'Windows':
+            if self.get_setting("os_build") == 'Windows':
                 # workaround Windows CMake Clang detection (Determine-Compiler-Standalone.cmake)
-                if self.settings.compiler == 'clang':
+                if self.get_setting("compiler") == 'clang':
                     with tools.chdir(os.path.join(self.package_folder, 'bin')):
                         shutil.copy('clang90.exe', 'clang.exe')
                         shutil.copy('clang90++.exe', 'clang++.exe')
@@ -159,9 +190,9 @@ class AndroidNDKConan(ConanFile):
 
     def tool_name(self, tool):
         if 'clang' in tool:
-            suffix = '.cmd' if self.settings.os_build == 'Windows' else ''
+            suffix = '.cmd' if self.get_setting("os_build") == 'Windows' else ''
         else:
-            suffix = '.exe' if self.settings.os_build == 'Windows' else ''
+            suffix = '.exe' if self.get_setting("os_build") == 'Windows' else ''
         return '%s-%s%s' % (self.triplet, tool, suffix)
 
     def define_tool_var(self, name, value, ndk_bin):
@@ -170,10 +201,8 @@ class AndroidNDKConan(ConanFile):
         return path
 
     def package_id(self):
-        self.info.include_build_settings()
-        if str(self.settings.compiler.libcxx) in ['libstdc++', 'libstdc++11']:
-            self.info.settings.compiler.libcxx = 'libstdc++'
-        del self.info.settings.build_type
+        if self.isSingleProfile():
+            self.info.include_build_settings()
 
     def package_info(self):
         ndk_root = self.package_folder
@@ -203,8 +232,8 @@ class AndroidNDKConan(ConanFile):
             self.env_info.CONAN_CMAKE_TOOLCHAIN_FILE = toolchain
             self.env_info.CONAN_ANDROID_STL = self.android_stdlib
             self.env_info.CONAN_ANDROID_ABI = self.android_abi
-            self.env_info.CONAN_ANDROID_TOOLCHAIN = str(self.settings.compiler)
-            self.env_info.CONAN_ANDROID_PLATFORM = "android-" + str(self.settings.os.api_level)
+            self.env_info.CONAN_ANDROID_TOOLCHAIN = self.get_setting("compiler")
+            self.env_info.CONAN_ANDROID_PLATFORM = "android-" + str(self.get_setting("os.api_level"))
 
         ndk_sysroot = os.path.join(ndk_root, 'sysroot')
 
