@@ -62,6 +62,9 @@ class AndroidNDKConan(ConanFile):
             return setting_val
 
     def configure(self):
+        if not self.isSingleProfile():
+            del self.settings.os_build
+            del self.settings.arch_build
         if self.get_setting("os_build") not in ["Windows", "Macos", "Linux"]:
             raise ConanException("Unsupported build os: %s. Supported are: Windows, Macos, Linux" % self.get_setting("os_build"))
         if self.get_setting("arch_build") != "x86_64":
@@ -201,8 +204,14 @@ class AndroidNDKConan(ConanFile):
         return path
 
     def package_id(self):
-        if self.isSingleProfile():
-            self.info.include_build_settings()
+        if not self.options.makeStandalone:
+            self.info.settings.os = self.get_setting("os_build")
+            self.info.settings.arch = self.get_setting("arch_build")
+            del self.info.settings.compiler
+        else:
+            self.info.settings.os = self.get_setting("os")
+            self.info.settings.arch = str(self.get_setting("arch")) + str(self.get_setting("os_build")) + str(self.get_setting("arch_build")) # We have to include the build infos
+            self.info.settings.compiler = self.get_setting("compiler")
 
     def package_info(self):
         ndk_root = self.package_folder
