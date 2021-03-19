@@ -143,7 +143,7 @@ class AndroidNDKConan(ConanFile):
         else:
             suffix = '.exe' if self.get_setting("os_build") == 'Windows' else ''
         proposedName = '%s-%s%s' % (self.triplet, tool, suffix)
-        if 'arm' in proposedName:
+        if 'arm' in proposedName and 'clang' in proposedName:
             proposedName = proposedName.replace('arm', 'armv7a')
         if 'clang' in proposedName:
             proposedName = proposedName.replace(self.abi, self.abi + str(self.get_setting("os.api_level")))
