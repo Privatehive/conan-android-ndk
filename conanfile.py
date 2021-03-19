@@ -138,9 +138,8 @@ class AndroidNDKConan(ConanFile):
         self.copy(pattern="android.toolchain.conan.cmake", dst="build/cmake", src='.')
 
     def tool_name(self, tool):
-        if 'clang' in tool:
-            suffix = '.cmd' if self.get_setting("os_build") == 'Windows' else ''
-        else:
+        suffix = ''
+        if not 'clang' in tool:
             suffix = '.exe' if self.get_setting("os_build") == 'Windows' else ''
         proposedName = '%s-%s%s' % (self.triplet, tool, suffix)
         if 'arm' in proposedName and 'clang' in tool:
