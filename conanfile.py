@@ -161,6 +161,7 @@ class AndroidNDKConan(ConanFile):
     def package_info(self):
         ndk_root = self.package_folder
         ndk_bin = os.path.join(ndk_root, 'toolchains', 'llvm', 'prebuilt', '%s-%s' % (self.os_name, self.get_setting("arch_build")), 'bin')
+        ndk_sysroot = os.path.join(ndk_root, 'toolchains', 'llvm', 'prebuilt', '%s-%s' % (self.os_name, self.get_setting("arch_build")), 'sysroot')
 
         self.output.info(
             'Creating NDK_ROOT, ANDROID_NDK_ROOT, ANDROID_NDK_HOME, CONAN_CMAKE_ANDROID_NDK environment variable: %s' % ndk_root)
@@ -186,8 +187,6 @@ class AndroidNDKConan(ConanFile):
         self.env_info.CONAN_ANDROID_ABI = self.android_abi
         self.env_info.CONAN_ANDROID_TOOLCHAIN = str(self.get_setting("compiler"))
         self.env_info.CONAN_ANDROID_PLATFORM = "android-" + str(self.get_setting("os.api_level"))
-
-        ndk_sysroot = os.path.join(ndk_root, 'sysroot')
 
         self.output.info('Creating CONAN_CMAKE_FIND_ROOT_PATH environment variable: %s' % ndk_sysroot)
         self.env_info.CONAN_CMAKE_FIND_ROOT_PATH = ndk_sysroot
