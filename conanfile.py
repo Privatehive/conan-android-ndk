@@ -9,7 +9,7 @@ import shutil
 
 class AndroidNDKConan(ConanFile):
     name = "android-ndk"
-    version = "r21e"
+    version = "r23b"
     description = "The Android NDK is a toolset that lets you implement parts of your app in native code, " \
                   "using languages such as C and C++"
     url = "https://github.com/Tereius/conan-android-ndk"
@@ -20,8 +20,8 @@ class AndroidNDKConan(ConanFile):
     no_copy_source = True
     settings = "os", "arch", "compiler", "os_build", "arch_build"
 
-    supported_clang_version = "9"
-    max_supported_api_level = 30
+    supported_clang_version = "12"
+    max_supported_api_level = 32
 
     def __getattr_recursive(self, obj, name, default):
         if obj is None:
@@ -78,10 +78,12 @@ class AndroidNDKConan(ConanFile):
             raise ConanException("Only clang version " + self.supported_clang_version + " is supported")
 
     def source(self):
-        source_url = "https://dl.google.com/android/repository/android-ndk-{0}-{1}-{2}.zip".format(self.version,
+        source_url = "https://dl.google.com/android/repository/android-ndk-{0}-{1}.zip".format(self.version,
                                                                                                    self.os_name,
                                                                                                    self.get_setting("arch_build"))
         tools.get(source_url, keep_permissions=True)
+        tools.replace_in_file(os.path.join(self.source_folder, "android-ndk-" + self.version, "toolchains", "llvm", "prebuilt", "{0}-{1}".format(self.os_name, self.get_setting("arch_build")), "bin", "clang"), "clang-12", "#!/bin/bash\n`dirname $0`/clang-12 \"$@\"")
+        tools.replace_in_file(os.path.join(self.source_folder, "android-ndk-" + self.version, "toolchains", "llvm", "prebuilt", "{0}-{1}".format(self.os_name, self.get_setting("arch_build")), "bin", "clang++"), "clang", "#!/bin/bash\n`dirname $0`/clang-12 \"$@\"")
 
     @property
     def os_name(self):
@@ -153,6 +155,11 @@ class AndroidNDKConan(ConanFile):
         self.output.info('Creating %s environment variable: %s' % (name, path))
         return path
 
+    def define_tool_var_wo_triplet(self, name, value, ndk_bin):
+        path = os.path.join(ndk_bin, value)
+        self.output.info('Creating %s environment variable: %s' % (name, path))
+        return path
+
     def package_id(self):
         self.info.settings.os = self.get_setting("os_build")
         self.info.settings.arch = self.get_setting("arch_build")
@@ -200,16 +207,16 @@ class AndroidNDKConan(ConanFile):
         self.env_info.CC = self.define_tool_var('CC', 'clang', ndk_bin)
         self.env_info.CXX = self.define_tool_var('CXX', 'clang++', ndk_bin)
         self.env_info.AS = self.define_tool_var('AS', 'clang', ndk_bin)
-        self.env_info.LD = self.define_tool_var('LD', 'ld', ndk_bin)
-        self.env_info.AR = self.define_tool_var('AR', 'ar', ndk_bin)
-        self.env_info.RANLIB = self.define_tool_var('RANLIB', 'ranlib', ndk_bin)
-        self.env_info.STRIP = self.define_tool_var('STRIP', 'strip', ndk_bin)
-        self.env_info.NM = self.define_tool_var('NM', 'nm', ndk_bin)
-        self.env_info.ADDR2LINE = self.define_tool_var('ADDR2LINE', 'addr2line', ndk_bin)
-        self.env_info.OBJCOPY = self.define_tool_var('OBJCOPY', 'objcopy', ndk_bin)
-        self.env_info.OBJDUMP = self.define_tool_var('OBJDUMP', 'objdump', ndk_bin)
-        self.env_info.READELF = self.define_tool_var('READELF', 'readelf', ndk_bin)
-        self.env_info.ELFEDIT = self.define_tool_var('ELFEDIT', 'elfedit', ndk_bin)
+        self.env_info.LD = self.define_tool_var_wo_triplet('LD', 'ld', ndk_bin)
+        self.env_info.AR = self.define_tool_var_wo_triplet('AR', 'llvm-ar', ndk_bin)
+        self.env_info.RANLIB = self.define_tool_var_wo_triplet('RANLIB', 'llvm-ar', ndk_bin)
+        self.env_info.STRIP = self.define_tool_var_wo_triplet('STRIP', 'llvm-objcopy', ndk_bin)
+        self.env_info.NM = self.define_tool_var_wo_triplet('NM', 'llvm-nm', ndk_bin)
+        self.env_info.ADDR2LINE = self.define_tool_var_wo_triplet('ADDR2LINE', 'llvm-symbolizer', ndk_bin)
+        self.env_info.OBJCOPY = self.define_tool_var_wo_triplet('OBJCOPY', 'llvm-objcopy', ndk_bin)
+        self.env_info.OBJDUMP = self.define_tool_var_wo_triplet('OBJDUMP', 'llvm-objdump', ndk_bin)
+        self.env_info.READELF = self.define_tool_var_wo_triplet('READELF', 'llvm-readobj', ndk_bin)
+        # self.env_info.ELFEDIT = self.define_tool_var_wo_triplet('ELFEDIT', 'elfedit', ndk_bin)
         
         self.output.info('Creating self.cpp_info.builddirs: %s' % os.path.join(ndk_root, 'build'))
         self.cpp_info.builddirs = [os.path.join(ndk_root, 'build')]
