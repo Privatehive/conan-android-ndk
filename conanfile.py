@@ -84,6 +84,8 @@ class AndroidNDKConan(ConanFile):
         tools.get(source_url, keep_permissions=True)
         tools.replace_in_file(os.path.join(self.source_folder, "android-ndk-" + self.version, "toolchains", "llvm", "prebuilt", "{0}-{1}".format(self.os_name, self.get_setting("arch_build")), "bin", "clang"), "clang-12", "#!/bin/bash\n`dirname $0`/clang-12 \"$@\"")
         tools.replace_in_file(os.path.join(self.source_folder, "android-ndk-" + self.version, "toolchains", "llvm", "prebuilt", "{0}-{1}".format(self.os_name, self.get_setting("arch_build")), "bin", "clang++"), "clang", "#!/bin/bash\n`dirname $0`/clang-12 \"$@\"")
+        tools.replace_in_file(os.path.join(self.source_folder, "android-ndk-" + self.version, "toolchains", "llvm", "prebuilt", "{0}-{1}".format(self.os_name, self.get_setting("arch_build")), "bin", "llvm-ranlib"), "llvm-ar", "#!/bin/bash\n`dirname $0`/llvm-ar -s \"$@\"")
+
 
     @property
     def os_name(self):
@@ -209,7 +211,7 @@ class AndroidNDKConan(ConanFile):
         self.env_info.AS = self.define_tool_var('AS', 'clang', ndk_bin)
         self.env_info.LD = self.define_tool_var_wo_triplet('LD', 'ld', ndk_bin)
         self.env_info.AR = self.define_tool_var_wo_triplet('AR', 'llvm-ar', ndk_bin)
-        self.env_info.RANLIB = self.define_tool_var_wo_triplet('RANLIB', 'llvm-ar', ndk_bin)
+        self.env_info.RANLIB = self.define_tool_var_wo_triplet('RANLIB', 'llvm-ranlib', ndk_bin)
         self.env_info.STRIP = self.define_tool_var_wo_triplet('STRIP', 'llvm-objcopy', ndk_bin)
         self.env_info.NM = self.define_tool_var_wo_triplet('NM', 'llvm-nm', ndk_bin)
         self.env_info.ADDR2LINE = self.define_tool_var_wo_triplet('ADDR2LINE', 'llvm-symbolizer', ndk_bin)
