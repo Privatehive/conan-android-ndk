@@ -1,0 +1,13 @@
+{
+  "version": "r25b",
+  "projectName": "android-ndk",
+  "projectDescription": "The Android NDK is a toolset that lets you implement parts of your app in native code, using languages such as C and C++",
+  "vendor": "Björn Stresing",
+  "contact": "bjoern.stresing@gmx.de",
+  "domain": "com.github.tereius",
+  "copyrightYear": "2023",
+  "repository": "https://github.com/Tereius/conan-android-ndk",
+  "topics": ["Android", "NDK"],
+  "homepage": "https://developer.android.com/ndk",
+  "license": "Android Software Development Kit License"
+}
