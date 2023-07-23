@@ -152,9 +152,6 @@ class AndroidNDKConan(ConanFile):
         self.output.info('Prepending to PATH environment variable: %s' % ndk_bin)
         self.buildenv_info.prepend_path("PATH", ndk_bin)
 
-        toolchain = os.path.join(ndk_root, "build", "cmake", "android.toolchain.conan.cmake")
-        #self.output.info('Creating CONAN_CMAKE_TOOLCHAIN_FILE environment variable: %s' % toolchain)
-
         self.conf_info.define("tools.android:ndk_path", ndk_root)
         self.conf_info.define("tools.android:cmake_legacy_toolchain", False)
 
