@@ -60,27 +60,27 @@ class AndroidNDKConan(ConanFile):
         return {"armv7": "arm",
                 "armv8": "arm",
                 "x86": "x86",
-                "x86_64": "x86"}.get(str(self.settings.arch))
+                "x86_64": "x86"}.get(str(self.settings_target.arch))
 
     @property
     def android_arch(self):
         return {"armv7": "arm",
                 "armv8": "arm64",
                 "x86": "x86",
-                "x86_64": "x86_64"}.get(str(self.settings.arch))
+                "x86_64": "x86_64"}.get(str(self.settings_target.arch))
 
     @property
     def android_abi(self):
         return {"armv7": "armeabi-v7a",
                 "armv8": "arm64-v8a",
                 "x86": "x86",
-                "x86_64": "x86_64"}.get(str(self.settings.arch))
+                "x86_64": "x86_64"}.get(str(self.settings_target.arch))
 
     @property
     def android_stdlib(self):
         return {"libc++": "c++_shared",
                 "c++_shared": "c++_shared",
-                "c++_static": "c++_static"}.get(str(self.settings.compiler.libcxx))
+                "c++_static": "c++_static"}.get(str(self.settings_target.compiler.libcxx))
 
     @property
     def abi(self):
@@ -124,7 +124,7 @@ class AndroidNDKConan(ConanFile):
         if 'arm' in proposedName and 'clang' in tool:
             proposedName = proposedName.replace('arm', 'armv7a')
         if 'clang' in tool:
-            proposedName = proposedName.replace(self.abi, self.abi + str(self.settings.os.api_level))
+            proposedName = proposedName.replace(self.abi, self.abi + str(self.settings_target.os.api_level))
         return proposedName
 
     def define_tool_var(self, name, value, ndk_bin):
@@ -169,19 +169,19 @@ class AndroidNDKConan(ConanFile):
         #self.output.info('Creating self.cpp_info.sysroot: %s' % ndk_sysroot)
         #self.cpp_info.sysroot = ndk_sysroot
 
-        #self.buildenv_info.define_path("CC", self.define_tool_var('CC', 'clang', ndk_bin))
-        #self.buildenv_info.define_path("CXX", self.define_tool_var('CXX', 'clang++', ndk_bin))
-        #self.buildenv_info.define_path("AS", self.define_tool_var('AS', 'clang', ndk_bin))
-        #self.buildenv_info.define_path("LD", self.define_tool_var('LD', 'ld', ndk_bin))
-        #self.buildenv_info.define_path("AR", self.define_tool_var('AR', 'ar', ndk_bin))
-        #self.buildenv_info.define_path("RANLIB", self.define_tool_var('RANLIB', 'ranlib', ndk_bin))
-        #self.buildenv_info.define_path("STRIP", self.define_tool_var('STRIP', 'strip', ndk_bin))
-        #self.buildenv_info.define_path("NM", self.define_tool_var('NM', 'nm', ndk_bin))
-        #self.buildenv_info.define_path("ADDR2LINE", self.define_tool_var('ADDR2LINE', 'addr2line', ndk_bin))
-        #self.buildenv_info.define_path("OBJCOPY", self.define_tool_var('OBJCOPY', 'objcopy', ndk_bin))
-        #self.buildenv_info.define_path("OBJDUMP", self.define_tool_var('OBJDUMP', 'objdump', ndk_bin))
-        #self.buildenv_info.define_path("READELF", self.define_tool_var('READELF', 'readelf', ndk_bin))
-        #self.buildenv_info.define_path("ELFEDIT", self.define_tool_var('ELFEDIT', 'elfedit', ndk_bin))
+        self.buildenv_info.define_path("CXX", self.define_tool_var('CXX', 'clang++', ndk_bin))
+        self.buildenv_info.define_path("CC", self.define_tool_var('CC', 'clang', ndk_bin))
+        self.buildenv_info.define_path("AS", self.define_tool_var('AS', 'clang', ndk_bin))
+        self.buildenv_info.define_path("LD", self.define_tool_var('LD', 'clang', ndk_bin))
+        self.buildenv_info.define_path("AR", os.path.join(ndk_bin, "llvm-ar"))
+        self.buildenv_info.define_path("RANLIB", os.path.join(ndk_bin, "llvm-ranlib"))
+        self.buildenv_info.define_path("STRIP", os.path.join(ndk_bin, "llvm-strip"))
+        self.buildenv_info.define_path("NM", os.path.join(ndk_bin, "llvm-nm"))
+        #self.buildenv_info.define_path("ADDR2LINE", os.path.join(ndk_bin, "llvm-addr2line"))
+        self.buildenv_info.define_path("OBJCOPY", os.path.join(ndk_bin, "llvm-objcopy"))
+        self.buildenv_info.define_path("OBJDUMP", os.path.join(ndk_bin, "llvm-objdump"))
+        self.buildenv_info.define_path("READELF", os.path.join(ndk_bin, "llvm-readelf"))
+        #self.buildenv_info.define_path("ELFEDIT", os.path.join(ndk_bin, "llvm-elfedit"))
         
         self.output.info('Creating self.cpp_info.builddirs: %s' % os.path.join(ndk_root, 'build'))
         self.cpp_info.includedirs = []
