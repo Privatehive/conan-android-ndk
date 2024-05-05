@@ -109,7 +109,7 @@ class AndroidNDKConan(ConanFile):
         if self.settings.os == "Linux":
             # conan unzip ignores symlinks
             download(self, self.conan_data["sources"][self.version][str(key)]["url"], "android-ndk-%s.zip" % self.version)
-            self.run("unzip -qq -d %s android-ndk-%s.zip" % (self.source_folder, self.version))
+            self.run("unzip -qq -o -d %s android-ndk-%s.zip" % (self.source_folder, self.version))
         else:
             get(self, **self.conan_data["sources"][self.version][str(key)], destination=self.source_folder)
 
