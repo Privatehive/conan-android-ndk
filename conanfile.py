@@ -18,9 +18,6 @@ required_conan_version = ">=2.0"
 
 class AndroidNDKConan(ConanFile):
 
-    supported_clang_version = "14"
-    max_supported_api_level = 33
-
     jsonInfo = json.load(open("info.json", 'r'))
     # ---Package reference---
     name = jsonInfo["projectName"]
