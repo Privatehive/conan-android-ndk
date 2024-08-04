@@ -3,16 +3,9 @@
 
 from conan import ConanFile
 from conan.tools.system.package_manager import Apt, PacMan
-from conan.tools.cmake import CMake, CMakeToolchain
-from conan.tools.files import patch, load, download, replace_in_file, copy, get
-from conan.tools.build import cross_building, build_jobs
-from conan.tools.env import VirtualBuildEnv
-from conan.tools.scm import Git
+from conan.errors import ConanInvalidConfiguration
+from conan.tools.files import download, copy, get
 import json, os
-import shutil
-import configparser
-import tempfile
-import requests
 
 required_conan_version = ">=2.0"
 
@@ -92,10 +85,12 @@ class AndroidNDKConan(ConanFile):
         return '%s-linux-%s' % (arch, self.abi)
 
     def validate(self):
-        if self.settings.arch != "x86_64":
-            raise ConanInvalidConfiguration("Unsupported Architecture. This package currently only supports x86_64.")
-        if self.settings.os not in ["Windows", "Macos", "Linux"]:
-            raise ConanInvalidConfiguration("Unsupported os. This package currently only support Linux/Macos/Windows")
+        valid_os = ["Windows", "Linux", "Macos"]
+        if str(self.settings.os) not in valid_os:
+            raise ConanInvalidConfiguration(f"{self.name} {self.version} is only supported for the following operating systems: {valid_os}")
+        valid_arch = ["x86_64"]
+        if str(self.settings.arch) not in valid_arch:
+            raise ConanInvalidConfiguration(f"{self.name} {self.version} is only supported for the following architectures on {self.settings.os}: {valid_arch}")
 
     def system_requirements(self):
         Apt(self).install(["unzip"])
