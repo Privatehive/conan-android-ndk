@@ -22,20 +22,10 @@ jobs:
       conan_build_require: true
       conan_remotes: https://conan.privatehive.de/artifactory/api/conan/public-conan
 
-  build_macos_armv8:
-    name: "Macos"
-    uses: Privatehive/conan-workflows/.github/workflows/createPackage.yml@master
-    with:
-      name: "armv8"
-      image: "macos-15"
-      conan_host_profile: "androidArmv8"
-      conan_build_require: true
-      conan_remotes: https://conan.privatehive.de/artifactory/api/conan/public-conan
-
   upload_recipe:
     name: "Finalize"
     uses: Privatehive/conan-workflows/.github/workflows/uploadRecipe.yml@master
-    needs: [ build_linux_x86_64, build_windows_x86_64, build_macos_armv8 ]
+    needs: [ build_linux_x86_64, build_windows_x86_64 ]
     if: ${{ success() }}
     secrets: inherit
     with:

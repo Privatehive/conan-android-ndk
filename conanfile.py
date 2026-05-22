@@ -85,10 +85,10 @@ class AndroidNDKConan(ConanFile):
         return '%s-linux-%s' % (arch, self.abi)
 
     def validate(self):
-        valid_os = ["Windows", "Linux", "Macos"]
+        valid_os = ["Windows", "Linux"]
         if str(self.settings.os) not in valid_os:
             raise ConanInvalidConfiguration(f"{self.name} {self.version} is only supported for the following operating systems: {valid_os}")
-        valid_arch = ["x86_64", "armv8"]
+        valid_arch = ["x86_64"]
         if str(self.settings.arch) not in valid_arch:
             raise ConanInvalidConfiguration(f"{self.name} {self.version} is only supported for the following architectures on {self.settings.os}: {valid_arch}")
 
