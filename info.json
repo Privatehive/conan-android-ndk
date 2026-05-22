@@ -1,5 +1,5 @@
 {
-  "version": "r26b",
+  "version": "r27c",
   "projectName": "android-ndk",
   "projectDescription": "The Android NDK is a toolset that lets you implement parts of your app in native code, using languages such as C and C++",
   "vendor": "Björn Stresing",

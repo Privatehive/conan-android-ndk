@@ -25,3 +25,16 @@ sources:
       url: "https://dl.google.com/android/repository/android-ndk-r26b-darwin.dmg"
       sha256: "d91b0aaa08df64f059df18df5a3322e09024f827817c39f31c8814488fe48bf0"
       keep_permissions: True
+  "r27c":
+    Windows:
+      url: "https://dl.google.com/android/repository/android-ndk-r27c-windows.zip"
+      sha256: "27e49f11e0cee5800983d8af8f4acd5bf09987aa6f790d4439dda9f3643d2494"
+      keep_permissions: False
+    Linux:
+      url: "https://dl.google.com/android/repository/android-ndk-r27c-linux.zip"
+      sha256: "59c2f6dc96743b5daf5d1626684640b20a6bd2b1d85b13156b90333741bad5cc"
+      keep_permissions: True
+    Macos:
+      url: "https://dl.google.com/android/repository/android-ndk-r27c-darwin.dmg"
+      sha256: "7ec95a80d91cda7b4b69401d5c4a4c285fed729811fdf7ceba5739bc9d81e36b"
+      keep_permissions: True
